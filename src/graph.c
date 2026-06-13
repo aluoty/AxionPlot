@@ -128,6 +128,11 @@ void GraphListClear(GraphList *list) {
 
 static void DrawPolyline(const PlotCamera *cam, const DisplaySettings *display, int screen_w, int screen_h, Color color,
                          int count, double (*sample_x)(int i, void *ctx), double (*sample_y)(int i, void *ctx), void *ctx) {
+    int panel_w = display->panel_width;
+    int plot_w = screen_w - panel_w;
+    if (plot_w < 1) return;
+
+    BeginScissorMode(panel_w, 0, plot_w, screen_h);
     bool first = true;
     Vector2 prev = {0};
     float thickness = DisplayLineWidth(display, 1.8f);
@@ -140,7 +145,7 @@ static void DrawPolyline(const PlotCamera *cam, const DisplaySettings *display, 
             continue;
         }
 
-        Vector2 point = PlotWorldToScreen(cam, (float)wx, (float)wy, screen_w, screen_h);
+        Vector2 point = PlotWorldToScreen(cam, (float)wx, (float)wy, screen_w, screen_h, display->panel_width);
         if (first) {
             prev = point;
             first = false;
@@ -149,6 +154,7 @@ static void DrawPolyline(const PlotCamera *cam, const DisplaySettings *display, 
             prev = point;
         }
     }
+    EndScissorMode();
 }
 
 typedef struct {
@@ -199,13 +205,14 @@ typedef struct {
     const PlotGraph *graph;
     PlotVars *vars;
     const PlotCamera *cam;
+    int panel_w;
     int screen_w;
     int screen_h;
 } CartCtx;
 
 static double CartSampleX(int i, void *ctx) {
     CartCtx *p = (CartCtx *)ctx;
-    return PlotScreenToWorld(p->cam, (float)i + (float)PANEL_WIDTH, 0.0f, p->screen_w, p->screen_h).x;
+    return PlotScreenToWorld(p->cam, (float)i + (float)p->panel_w, 0.0f, p->screen_w, p->screen_h, p->panel_w).x;
 }
 
 static double CartSampleY(int i, void *ctx) {
@@ -215,8 +222,15 @@ static double CartSampleY(int i, void *ctx) {
 }
 
 void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int screen_w, int screen_h) {
+    int panel_w = display->panel_width;
+    int plot_w = screen_w - panel_w;
+    if (plot_w < 1) return;
+
+    BeginScissorMode(panel_w, 0, plot_w, screen_h);
+    DrawRectangle(panel_w, 0, plot_w, screen_h, (Color){10, 14, 28, 255});
+
     float x_min, x_max, y_min, y_max;
-    CameraGetBounds(cam, screen_w, screen_h, &x_min, &x_max, &y_min, &y_max);
+    CameraGetBounds(cam, screen_w, screen_h, panel_w, &x_min, &x_max, &y_min, &y_max);
 
     float x_step = (float)NiceStep(x_max - x_min);
     float y_step = (float)NiceStep(y_max - y_min);
@@ -228,41 +242,43 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
     float axis_w = DisplayLineWidth(display, 1.5f);
 
     for (float x = x_start; x <= x_max; x += x_step) {
-        Vector2 top = PlotWorldToScreen(cam, x, y_max, screen_w, screen_h);
-        Vector2 bot = PlotWorldToScreen(cam, x, y_min, screen_w, screen_h);
+        Vector2 top = PlotWorldToScreen(cam, x, y_max, screen_w, screen_h, panel_w);
+        Vector2 bot = PlotWorldToScreen(cam, x, y_min, screen_w, screen_h, panel_w);
         bool axis = fabsf(x) < x_step * 0.01f;
-        Color c = axis ? (Color){80, 80, 80, 255} : (Color){24, 24, 24, 255};
-        DrawLineEx((Vector2){top.x, 0}, (Vector2){bot.x, (float)screen_h}, axis ? axis_w : grid_w, c);
-
-        if (top.x >= PANEL_WIDTH && top.x <= screen_w) {
+        Color c = axis ? (Color){110, 125, 160, 255} : (Color){40, 50, 75, 255};
+        if (top.x >= panel_w && top.x <= screen_w) {
+            DrawLineEx((Vector2){top.x, 0}, (Vector2){bot.x, (float)screen_h}, axis ? axis_w : grid_w, c);
             char label[32];
             FormatTick(x, label, sizeof(label));
-            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){140, 140, 140, 255});
+            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){150, 165, 195, 255});
         }
     }
 
     for (float y = y_start; y <= y_max; y += y_step) {
-        Vector2 left = PlotWorldToScreen(cam, x_min, y, screen_w, screen_h);
-        Vector2 right = PlotWorldToScreen(cam, x_max, y, screen_w, screen_h);
+        Vector2 left = PlotWorldToScreen(cam, x_min, y, screen_w, screen_h, panel_w);
+        Vector2 right = PlotWorldToScreen(cam, x_max, y, screen_w, screen_h, panel_w);
         bool axis = fabsf(y) < y_step * 0.01f;
-        Color c = axis ? (Color){80, 80, 80, 255} : (Color){24, 24, 24, 255};
-        DrawLineEx((Vector2){(float)PANEL_WIDTH, left.y}, (Vector2){(float)screen_w, right.y}, axis ? axis_w : grid_w, c);
+        Color c = axis ? (Color){110, 125, 160, 255} : (Color){40, 50, 75, 255};
+        DrawLineEx((Vector2){(float)panel_w, left.y}, (Vector2){(float)screen_w, right.y}, axis ? axis_w : grid_w, c);
 
         if (left.y >= 0 && left.y <= screen_h - 20) {
             char label[32];
             FormatTick(y, label, sizeof(label));
-            DrawText(label, PANEL_WIDTH + 4, (int)left.y - label_fs, label_fs, (Color){140, 140, 140, 255});
+            DrawText(label, panel_w + 4, (int)left.y - label_fs, label_fs, (Color){150, 165, 195, 255});
         }
     }
 
-    Vector2 origin = PlotWorldToScreen(cam, 0.0f, 0.0f, screen_w, screen_h);
-    if (origin.x >= PANEL_WIDTH && origin.x <= screen_w && origin.y >= 0 && origin.y <= screen_h) {
-        DrawCircleV(origin, DisplayLineWidth(display, 3.0f), (Color){0, 255, 204, 180});
+    Vector2 origin = PlotWorldToScreen(cam, 0.0f, 0.0f, screen_w, screen_h, panel_w);
+    if (origin.x >= panel_w && origin.x <= screen_w && origin.y >= 0 && origin.y <= screen_h) {
+        DrawCircleV(origin, DisplayLineWidth(display, 3.0f), (Color){120, 230, 200, 220});
     }
+
+    EndScissorMode();
 }
 
 void GraphListDraw(const GraphList *list, const PlotCamera *cam, PlotVars *vars, const DisplaySettings *display, int screen_w, int screen_h) {
-    int plot_w = screen_w - PANEL_WIDTH;
+    int panel_w = display->panel_width;
+    int plot_w = screen_w - panel_w;
     int curve_samples = DisplaySampleCount(display, plot_w);
 
     for (int g = 0; g < list->count; g++) {
@@ -276,7 +292,7 @@ void GraphListDraw(const GraphList *list, const PlotCamera *cam, PlotVars *vars,
             PolarCtx ctx = {graph, vars, curve_samples};
             DrawPolyline(cam, display, screen_w, screen_h, graph->color, curve_samples, PolarSampleX, PolarSampleY, &ctx);
         } else {
-            CartCtx ctx = {graph, vars, cam, screen_w, screen_h};
+            CartCtx ctx = {graph, vars, cam, panel_w, screen_w, screen_h};
             if (plot_w < 1) continue;
             DrawPolyline(cam, display, screen_w, screen_h, graph->color, curve_samples, CartSampleX, CartSampleY, &ctx);
         }
@@ -284,8 +300,11 @@ void GraphListDraw(const GraphList *list, const PlotCamera *cam, PlotVars *vars,
 }
 
 void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *vars, float trace_x, const DisplaySettings *display, int screen_w, int screen_h) {
-    Vector2 top = PlotWorldToScreen(cam, trace_x, 0.0f, screen_w, screen_h);
-    DrawLineEx((Vector2){top.x, 0}, (Vector2){top.x, (float)screen_h}, DisplayLineWidth(display, 1.0f), (Color){60, 60, 60, 255});
+    int panel_w = display->panel_width;
+    Vector2 top = PlotWorldToScreen(cam, trace_x, 0.0f, screen_w, screen_h, panel_w);
+    if (top.x >= panel_w) {
+        DrawLineEx((Vector2){top.x, 0}, (Vector2){top.x, (float)screen_h}, DisplayLineWidth(display, 1.0f), (Color){80, 90, 110, 255});
+    }
 
     for (int g = 0; g < list->count; g++) {
         const PlotGraph *graph = &list->items[g];
@@ -294,7 +313,8 @@ void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *
         double y = ExprEval(graph->compiled_a, trace_x, 0.0, vars);
         if (!isfinite(y)) continue;
 
-        Vector2 pt = PlotWorldToScreen(cam, trace_x, (float)y, screen_w, screen_h);
+        Vector2 pt = PlotWorldToScreen(cam, trace_x, (float)y, screen_w, screen_h, panel_w);
+        if (pt.x < panel_w) continue;
         float r = DisplayLineWidth(display, 5.0f);
         DrawCircleV(pt, r, graph->color);
 

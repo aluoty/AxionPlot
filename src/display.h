@@ -6,11 +6,14 @@
 typedef struct {
     int window_width;
     int window_height;
+    int panel_width;
     int render_scale;
     int window_preset;
     int quality_preset;
     bool fullscreen;
 } DisplaySettings;
+
+int DisplayPanelWidth(int screen_w);
 
 void DisplayInit(DisplaySettings *display, int width, int height, int render_scale);
 void DisplayShutdown(DisplaySettings *display);

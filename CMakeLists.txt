@@ -17,6 +17,10 @@ set(AXION_WINDOW_WIDTH 1920 CACHE STRING "Default window width")
 set(AXION_WINDOW_HEIGHT 1080 CACHE STRING "Default window height")
 set(AXION_RENDER_SCALE 2 CACHE STRING "Default render supersampling (1-3)")
 
+if(EMSCRIPTEN)
+    set(AXION_RENDER_SCALE 1 CACHE STRING "Default render supersampling (1-3)" FORCE)
+endif()
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -39,6 +43,7 @@ add_executable(AxionPlot
     src/expr.c
     src/graph.c
     src/ui.c
+    src/web_api.c
     lib/tinyexpr.c
 )
 
@@ -62,7 +67,8 @@ if(EMSCRIPTEN)
         -sWASM=1
         -sASYNCIFY
         -sGL_ENABLE_GET_PROC_ADDRESS=1
-        -sEXPORTED_RUNTIME_METHODS=setCanvasSize
+        -sEXPORTED_RUNTIME_METHODS=setCanvasSize,ccall,cwrap
+        -sEXPORTED_FUNCTIONS=_main,_AxionWebConfigure
         --shell-file "${CMAKE_SOURCE_DIR}/web/shell.html"
     )
 endif()

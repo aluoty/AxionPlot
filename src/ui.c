@@ -173,7 +173,7 @@ static void DrawKeypad(int x, int y, int w) {
     }
 }
 
-static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, int inner_w, int *y) {
+static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, int panel_w, int inner_w, int *y) {
     const char *mode_names = "Cartesian;Parametric;Polar";
     GuiComboBox((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 24}, mode_names, (int *)&g_plot_mode);
     *y += 30;
@@ -184,7 +184,7 @@ static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, 
         if (g_edit_a) g_edit_b = false;
     }
     GuiTextBox(box_a, g_input_a, EXPR_MAX_LEN, g_edit_a);
-    if (GuiButton((Rectangle){(float)(PANEL_WIDTH - PANEL_PADDING - 60), (float)*y, 60, 28}, "Plot")) {
+    if (GuiButton((Rectangle){(float)(panel_w - PANEL_PADDING - 60), (float)*y, 60, 28}, "Plot")) {
         AddGraph(graphs, vars);
     }
     *y += 34;
@@ -203,7 +203,7 @@ static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, 
         g_trace = !g_trace;
     }
     if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 2 + 2, (float)*y, (float)(inner_w / 2 - 2), 24}, "Home")) {
-        CameraReset(camera);
+        CameraResetForViewport(camera, GetScreenWidth(), GetScreenHeight(), panel_w);
     }
     *y += 30;
 
@@ -233,19 +233,19 @@ static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, 
 
         char del_id[32];
         snprintf(del_id, sizeof(del_id), "x##%d", graph->id);
-        if (GuiButton((Rectangle){(float)(PANEL_WIDTH - PANEL_PADDING - 28), (float)*y, 28, 28}, del_id)) {
+        if (GuiButton((Rectangle){(float)(panel_w - PANEL_PADDING - 28), (float)*y, 28, 28}, del_id)) {
             GraphListRemove(graphs, graph->id);
         }
 
-        Color text_color = graph->visible ? (Color){0, 255, 204, 255} : (Color){100, 100, 100, 255};
+        Color text_color = graph->visible ? (Color){140, 210, 195, 255} : (Color){70, 80, 95, 255};
         GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(text_color));
         GuiLabel((Rectangle){PANEL_PADDING + 36, (float)*y, (float)inner_w - 72, 28}, graph->label);
-        GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){0, 255, 204, 255}));
+        GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){140, 210, 195, 255}));
         *y += 32;
     }
 }
 
-static void DrawCalcTab(PlotVars *vars, int inner_w, int *y) {
+static void DrawCalcTab(PlotVars *vars, int panel_w, int inner_w, int *y) {
     Rectangle box = {PANEL_PADDING, (float)*y, (float)inner_w - 70, 28};
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         g_edit_calc = CheckCollisionPointRec(GetMousePosition(), box);
@@ -255,7 +255,7 @@ static void DrawCalcTab(PlotVars *vars, int inner_w, int *y) {
         }
     }
     GuiTextBox(box, g_calc_input, EXPR_MAX_LEN, g_edit_calc);
-    if (GuiButton((Rectangle){(float)(PANEL_WIDTH - PANEL_PADDING - 60), (float)*y, 60, 28}, "=")) {
+    if (GuiButton((Rectangle){(float)(panel_w - PANEL_PADDING - 60), (float)*y, 60, 28}, "=")) {
         EvaluateCalc(vars);
     }
     *y += 34;
@@ -337,18 +337,20 @@ static void DrawTableTab(const GraphList *graphs, PlotVars *vars, int inner_w, i
 
 void UiInit(void) {
     GuiLoadStyleDefault();
+    GuiEnable();
     GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
-    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){0, 255, 204, 255}));
-    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt((Color){0, 255, 204, 255}));
-    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt((Color){0, 0, 0, 160}));
-    GuiSetStyle(DEFAULT, BASE_COLOR_FOCUSED, ColorToInt((Color){0, 0, 0, 200}));
-    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt((Color){0, 255, 204, 51}));
-    GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, ColorToInt((Color){0, 255, 204, 128}));
+    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){140, 210, 195, 255}));
+    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt((Color){180, 235, 220, 255}));
+    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt((Color){8, 12, 24, 200}));
+    GuiSetStyle(DEFAULT, BASE_COLOR_FOCUSED, ColorToInt((Color){12, 18, 32, 220}));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt((Color){60, 120, 110, 60}));
+    GuiSetStyle(DEFAULT, BORDER_COLOR_FOCUSED, ColorToInt((Color){100, 200, 180, 120}));
 }
 
 bool UiWantsInput(void) {
+    int panel_w = DisplayPanelWidth(GetScreenWidth());
     return g_edit_a || g_edit_b || g_edit_calc ||
-           CheckCollisionPointRec(GetMousePosition(), (Rectangle){0, 0, PANEL_WIDTH, (float)GetScreenHeight()});
+           CheckCollisionPointRec(GetMousePosition(), (Rectangle){0, 0, (float)panel_w, (float)GetScreenHeight()});
 }
 
 bool UiTraceEnabled(void) {
@@ -359,12 +361,24 @@ float UiTraceX(void) {
     return g_trace_x;
 }
 
-static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
-    const char *window_names = "1280x720;1600x900;1920x1080;2560x1440";
-    const char *quality_names = "Standard (1x);High (2x);Ultra (3x)";
+static void DrawTabBar(int inner_w, int *y) {
+    if (GuiButton((Rectangle){PANEL_PADDING, (float)*y, (float)(inner_w / 4 - 2), 26}, "Graph")) g_tab = UI_TAB_GRAPH;
+    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 4 + 2, (float)*y, (float)(inner_w / 4 - 2), 26}, "Calc")) g_tab = UI_TAB_CALC;
+    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 2 + 4, (float)*y, (float)(inner_w / 4 - 2), 26}, "Table")) g_tab = UI_TAB_TABLE;
+    if (GuiButton((Rectangle){PANEL_PADDING + 3 * inner_w / 4 + 6, (float)*y, (float)(inner_w / 4 - 2), 26}, "Display")) g_tab = UI_TAB_DISPLAY;
+    *y += 34;
+}
 
-    int prev_window = display->window_preset;
+static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
+    const char *quality_names = "Standard (1x);High (2x);Ultra (3x)";
     int prev_quality = display->quality_preset;
+
+#if defined(PLATFORM_WEB)
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Canvas follows browser window");
+    *y += 24;
+#else
+    const char *window_names = "1280x720;1600x900;1920x1080;2560x1440";
+    int prev_window = display->window_preset;
 
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Window size");
     *y += 22;
@@ -375,8 +389,9 @@ static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
         }
     }
     *y += 30;
+#endif
 
-    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Render quality (supersampling)");
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Render quality");
     *y += 22;
     if (GuiComboBox((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 24}, quality_names, &display->quality_preset)) {
         if (display->quality_preset != prev_quality) {
@@ -391,14 +406,12 @@ static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
     *y += 24;
 
-    snprintf(info, sizeof(info), "Quality affects curve density and line width");
-    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
-    *y += 28;
-
+#if !defined(PLATFORM_WEB)
     if (GuiButton((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 28}, display->fullscreen ? "Exit fullscreen (F11)" : "Fullscreen (F11)")) {
         DisplayToggleFullscreen(display);
     }
     *y += 34;
+#endif
 
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 36},
              "Higher quality increases curve\nsampling and line thickness.");
@@ -407,30 +420,28 @@ static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
 
 void UiFrame(GraphList *graphs, PlotVars *vars, PlotCamera *camera, DisplaySettings *display, Vector2 cursor_world) {
     int height = GetScreenHeight();
-    const int inner_w = PANEL_WIDTH - PANEL_PADDING * 2;
+    int panel_w = display->panel_width;
+    const int inner_w = panel_w - PANEL_PADDING * 2;
+    const int keypad_h = 7 * 30;
+    const int footer_h = 48;
+    const int keypad_y = height - footer_h - keypad_h;
 
-    DrawRectangle(0, 0, PANEL_WIDTH, height, (Color){0, 0, 0, 180});
-    DrawLine(PANEL_WIDTH, 0, PANEL_WIDTH, height, (Color){0, 255, 204, 40});
+    DrawRectangle(0, 0, panel_w, height, (Color){4, 6, 14, 230});
+    DrawLine(panel_w, 0, panel_w, height, (Color){100, 200, 180, 80});
 
     if (g_trace && g_tab == UI_TAB_GRAPH) {
         g_trace_x = cursor_world.x;
     }
 
     int y = PANEL_PADDING;
+    DrawTabBar(inner_w, &y);
 
-    if (GuiButton((Rectangle){PANEL_PADDING, (float)y, (float)(inner_w / 4 - 2), 26}, "Graph")) g_tab = UI_TAB_GRAPH;
-    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 4 + 2, (float)y, (float)(inner_w / 4 - 2), 26}, "Calc")) g_tab = UI_TAB_CALC;
-    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 2 + 4, (float)y, (float)(inner_w / 4 - 2), 26}, "Table")) g_tab = UI_TAB_TABLE;
-    if (GuiButton((Rectangle){PANEL_PADDING + 3 * inner_w / 4 + 6, (float)y, (float)(inner_w / 4 - 2), 26}, "Display")) g_tab = UI_TAB_DISPLAY;
-    y += 34;
-
-    if (g_tab == UI_TAB_GRAPH) DrawGraphTab(graphs, vars, camera, inner_w, &y);
-    else if (g_tab == UI_TAB_CALC) DrawCalcTab(vars, inner_w, &y);
+    if (g_tab == UI_TAB_GRAPH) DrawGraphTab(graphs, vars, camera, panel_w, inner_w, &y);
+    else if (g_tab == UI_TAB_CALC) DrawCalcTab(vars, panel_w, inner_w, &y);
     else if (g_tab == UI_TAB_TABLE) DrawTableTab(graphs, vars, inner_w, &y);
     else DrawDisplayTab(display, inner_w, &y);
 
-    y += 8;
-    DrawKeypad(PANEL_PADDING, y, inner_w);
+    DrawKeypad(PANEL_PADDING, keypad_y, inner_w);
 
     char cursor_text[80];
     snprintf(cursor_text, sizeof(cursor_text), "(%.3g, %.3g)", cursor_world.x, cursor_world.y);

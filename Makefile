@@ -48,7 +48,7 @@ native:
 	@echo "Built: $(BUILD)/$(PROJECT)"
 
 wasm: emsdk-check
-	$(call EMS_RUN,emcmake $(CMAKE) -B $(WEB) $(CMAKE_FLAGS))
+	$(call EMS_RUN,emcmake $(CMAKE) -B $(WEB) -DAXION_RENDER_SCALE=1 $(CMAKE_FLAGS))
 	$(call EMS_RUN,$(CMAKE) --build $(WEB) --parallel $(JOBS))
 	@cp favicon.svg $(WEB)/ 2>/dev/null || true
 	@cp $(WEB)/$(PROJECT).html $(WEB)/index.html

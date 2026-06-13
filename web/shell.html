@@ -12,138 +12,105 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #000;
-            color: #00ffcc;
-            font-family: monospace;
             overflow: hidden;
+            background: #03040a;
         }
 
-        #toolbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 12px;
-            background: rgba(0, 0, 0, 0.85);
-            border-bottom: 1px solid rgba(0, 255, 204, 0.25);
-            z-index: 10;
-            font-size: 13px;
-        }
-
-        #toolbar label {
-            opacity: 0.85;
-        }
-
-        #toolbar select {
-            background: #111;
-            color: #00ffcc;
-            border: 1px solid rgba(0, 255, 204, 0.35);
-            padding: 4px 8px;
-            font-family: inherit;
-        }
-
-        #stage {
-            position: absolute;
-            top: 36px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: auto;
-        }
-
-        /* Backing-store pixels must match CSS size — no scaling via max-width */
         canvas.emscripten {
             display: block;
             outline: none;
-            border: 0 none;
-            padding: 0;
+            border: 0;
         }
 
         #status {
             position: fixed;
-            left: 10px;
-            bottom: 10px;
-            opacity: 0.7;
-            font-size: 12px;
-            z-index: 10;
+            left: 12px;
+            bottom: 8px;
+            color: #8ec8b8;
+            opacity: 0.8;
+            font: 11px/1.4 monospace;
+            pointer-events: none;
+            z-index: 1;
+            max-width: 90%;
         }
     </style>
 </head>
 <body>
-    <div id="toolbar">
-        <label for="resolution">Canvas</label>
-        <select id="resolution">
-            <option value="1280x720">1280 × 720</option>
-            <option value="1600x900">1600 × 900</option>
-            <option value="1920x1080" selected>1920 × 1080</option>
-            <option value="2560x1440">2560 × 1440</option>
-        </select>
-        <span id="hint">Quality: use Display tab in app</span>
-    </div>
-    <div id="stage">
-        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
-    </div>
-    <div id="status">Loading AxionPlot graphing calculator...</div>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
+    <div id="status">Loading AxionPlot...</div>
     <script type="text/javascript">
         var statusElement = document.getElementById('status');
         var canvas = document.getElementById('canvas');
-        var stage = document.getElementById('stage');
-        var resolutionSelect = document.getElementById('resolution');
         var runtimeReady = false;
+        var MIN_W = 640;
+        var MIN_H = 480;
 
-        function parseResolution(value) {
-            var parts = value.split('x');
-            return { width: parseInt(parts[0], 10), height: parseInt(parts[1], 10) };
+        function showStatus(text) {
+            if (!statusElement) return;
+            statusElement.textContent = text;
+            statusElement.style.display = 'block';
         }
 
-        function fitCanvas() {
-            var res = parseResolution(resolutionSelect.value);
-            var maxW = stage.clientWidth;
-            var maxH = stage.clientHeight;
-            var scale = Math.min(maxW / res.width, maxH / res.height, 1.0);
-            var w = Math.max(1, Math.floor(res.width * scale));
-            var h = Math.max(1, Math.floor(res.height * scale));
+        function checkWebGL() {
+            try {
+                var test = document.createElement('canvas');
+                return !!(test.getContext('webgl2') || test.getContext('webgl') || test.getContext('experimental-webgl'));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function resizeCanvas() {
+            var w = Math.max(MIN_W, window.innerWidth);
+            var h = Math.max(MIN_H, window.innerHeight);
 
             canvas.width = w;
             canvas.height = h;
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
 
-            if (runtimeReady) {
+            if (typeof Module !== 'undefined' && Module.setCanvasSize) {
                 Module.setCanvasSize(w, h);
+            }
+            if (runtimeReady && typeof Module !== 'undefined' && Module._AxionWebConfigure) {
+                Module._AxionWebConfigure(w, h, 0);
             }
         }
 
-        canvas.addEventListener('webglcontextlost', function(e) {
-            alert('WebGL context lost. Please reload the page.');
-            e.preventDefault();
-        }, false);
-
-        resolutionSelect.addEventListener('change', fitCanvas);
-        window.addEventListener('resize', fitCanvas);
+        if (!checkWebGL()) {
+            showStatus('WebGL is not available in this browser.');
+        }
 
         var Module = {
             canvas: canvas,
             setStatus: function(text) {
-                if (!statusElement) return;
-                if (text) statusElement.textContent = text;
-                else statusElement.style.display = 'none';
+                if (text) showStatus(text);
+                else if (statusElement) statusElement.style.display = 'none';
             },
-            preRun: [fitCanvas],
+            printErr: function(text) {
+                if (text) showStatus(String(text).trim());
+            },
+            onAbort: function(reason) {
+                showStatus('Failed to start: ' + (reason || 'unknown error'));
+            },
+            preRun: [resizeCanvas],
             onRuntimeInitialized: function() {
                 runtimeReady = true;
+                resizeCanvas();
+                Module.setStatus('');
             }
         };
 
-        window.onerror = function() {
-            Module.setStatus('Exception thrown. See JavaScript console.');
+        canvas.addEventListener('webglcontextlost', function(e) {
+            showStatus('WebGL context lost. Please reload the page.');
+            e.preventDefault();
+        }, false);
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        window.onerror = function(msg) {
+            showStatus('Error: ' + msg);
         };
         Module.setStatus('Downloading...');
     </script>

@@ -19,7 +19,7 @@ Plot functions interactively with pan/zoom, multiple graph modes, an on-screen k
 - Adjustable window sizes: 1280×720, 1600×900, 1920×1080, 2560×1440
 - Supersampling quality: 1× (standard), 2× (high), 3× (ultra)
 - MSAA and HiDPI support on desktop
-- **Display** tab in-app, or toolbar on web
+- **Display** tab in-app (window size on desktop; canvas follows browser on web)
 
 ### Calculator
 - Scientific expression evaluation (`sin`, `cos`, `tan`, `sqrt`, `ln`, `log`, `abs`, etc.)
@@ -55,7 +55,7 @@ Override default resolution at build time:
 
 ```bash
 make native WIDTH=1280 HEIGHT=720 SCALE=1
-make wasm WIDTH=1920 HEIGHT=1080 SCALE=2
+make wasm WIDTH=1920 HEIGHT=1080 SCALE=1   # web defaults to SCALE=1
 ```
 
 ## Emscripten setup
@@ -109,7 +109,7 @@ make run-web
 # Open http://localhost:8000/
 ```
 
-Use the toolbar at the top of the web page to change canvas size and quality before or after load.
+Use the **Display** tab to change render quality. On desktop you can also change window size; on web the canvas follows the browser window.
 
 ## Usage
 

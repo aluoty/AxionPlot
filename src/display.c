@@ -4,6 +4,7 @@
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/html5.h>
+#include <emscripten/emscripten.h>
 #endif
 
 static const int g_window_presets[][2] = {
@@ -15,13 +16,50 @@ static const int g_window_presets[][2] = {
 
 static const int g_quality_scales[] = {1, 2, 3};
 
+int DisplayPanelWidth(int screen_w) {
+#if defined(PLATFORM_WEB)
+    if (screen_w <= 0) return PANEL_WIDTH;
+
+    int panel = (int)(screen_w * 0.28f);
+    if (panel < 240) panel = 240;
+    if (panel > 300) panel = 300;
+
+    int min_plot = 240;
+    if (panel > screen_w - min_plot) panel = screen_w - min_plot;
+    if (panel < 200) panel = screen_w / 2;
+    return panel;
+#else
+    (void)screen_w;
+    return PANEL_WIDTH;
+#endif
+}
+
+#if defined(__EMSCRIPTEN__)
+static void DisplaySyncCanvasSize(void) {
+    int canvas_w = 0;
+    int canvas_h = 0;
+    if (emscripten_get_canvas_element_size("#canvas", &canvas_w, &canvas_h) != EMSCRIPTEN_RESULT_SUCCESS) return;
+    if (canvas_w < 1 || canvas_h < 1) return;
+    if (canvas_w != GetScreenWidth() || canvas_h != GetScreenHeight()) {
+        emscripten_set_canvas_element_size("#canvas", canvas_w, canvas_h);
+        SetWindowSize(canvas_w, canvas_h);
+    }
+}
+#endif
+
 void DisplayInit(DisplaySettings *display, int width, int height, int render_scale) {
     *display = (DisplaySettings){0};
     display->window_width = width;
     display->window_height = height;
+    display->panel_width = DisplayPanelWidth(width);
     display->render_scale = render_scale < 1 ? 1 : render_scale;
     display->window_preset = 2;
+#if defined(PLATFORM_WEB)
+    display->quality_preset = 0;
+    display->render_scale = 1;
+#else
     display->quality_preset = 1;
+#endif
 }
 
 void DisplayShutdown(DisplaySettings *display) {
@@ -51,6 +89,9 @@ void DisplayApplyWindowPreset(DisplaySettings *display, int preset) {
         display->fullscreen = false;
     }
 
+#if defined(__EMSCRIPTEN__)
+    emscripten_set_canvas_element_size("#canvas", display->window_width, display->window_height);
+#endif
     SetWindowSize(display->window_width, display->window_height);
 }
 
@@ -77,15 +118,19 @@ void DisplaySyncInput(void) {
     if (emscripten_get_element_css_size("#canvas", &css_w, &css_h) == EMSCRIPTEN_RESULT_SUCCESS &&
         css_w > 0.0 && css_h > 0.0) {
         SetMouseScale((float)GetScreenWidth() / (float)css_w, (float)GetScreenHeight() / (float)css_h);
-        return;
     }
 #endif
-    SetMouseScale(1.0f, 1.0f);
 }
 
 void DisplayBeginFrame(DisplaySettings *display) {
+#if defined(__EMSCRIPTEN__)
+    DisplaySyncCanvasSize();
+#endif
+
     int width = GetScreenWidth();
     int height = GetScreenHeight();
+
+    display->panel_width = DisplayPanelWidth(width);
 
     if (width != display->window_width || height != display->window_height) {
         if (!display->fullscreen) {
@@ -96,7 +141,7 @@ void DisplayBeginFrame(DisplaySettings *display) {
     }
 
     BeginDrawing();
-    ClearBackground((Color){8, 8, 12, 255});
+    ClearBackground((Color){6, 8, 18, 255});
 }
 
 void DisplayEndFrame(DisplaySettings *display) {
@@ -111,8 +156,15 @@ int DisplayRenderScale(const DisplaySettings *display) {
 int DisplaySampleCount(const DisplaySettings *display, int plot_width) {
     int base = plot_width > 0 ? plot_width : 800;
     int samples = base * display->render_scale;
+
+#if defined(PLATFORM_WEB)
+    int min_samples = base > 0 ? base : 400;
+    if (samples < min_samples) samples = min_samples;
+    if (samples > 5000) samples = 5000;
+#else
     if (samples < 800) samples = 800;
     if (samples > 12000) samples = 12000;
+#endif
     return samples;
 }
 
