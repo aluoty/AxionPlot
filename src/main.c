@@ -1,15 +1,27 @@
 #include "axion_plot.h"
 #include "camera.h"
+#include "display.h"
 #include "graph.h"
 #include "ui.h"
 
-int main(void) {
-    const int screen_w = 1280;
-    const int screen_h = 720;
+#ifndef AXION_WINDOW_WIDTH
+#define AXION_WINDOW_WIDTH 1920
+#endif
+#ifndef AXION_WINDOW_HEIGHT
+#define AXION_WINDOW_HEIGHT 1080
+#endif
+#ifndef AXION_RENDER_SCALE
+#define AXION_RENDER_SCALE 2
+#endif
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(screen_w, screen_h, "AxionPlot - Graphing Calculator");
+int main(void) {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
+    InitWindow(AXION_WINDOW_WIDTH, AXION_WINDOW_HEIGHT, "AxionPlot - Graphing Calculator");
     SetTargetFPS(60);
+
+    DisplaySettings display;
+    DisplayInit(&display, AXION_WINDOW_WIDTH, AXION_WINDOW_HEIGHT, AXION_RENDER_SCALE);
+    DisplayEnsureTarget(&display);
 
     PlotCamera camera = {0.0f, 0.0f, 60.0f};
     PlotVars vars = {1.0, 1.0, 1.0};
@@ -36,17 +48,21 @@ int main(void) {
             }
         }
 
-        BeginDrawing();
-        ClearBackground((Color){8, 8, 12, 255});
-        DrawPlotGrid(&camera, width, height);
-        GraphListDraw(&graphs, &camera, &vars, width, height);
-        if (UiTraceEnabled()) {
-            GraphListDrawTrace(&graphs, &camera, &vars, UiTraceX(), width, height);
+        if (IsKeyPressed(KEY_F11)) {
+            DisplayToggleFullscreen(&display);
         }
-        UiFrame(&graphs, &vars, &camera, world);
-        EndDrawing();
+
+        DisplayBeginFrame(&display);
+        DrawPlotGrid(&camera, &display, width, height);
+        GraphListDraw(&graphs, &camera, &vars, &display, width, height);
+        if (UiTraceEnabled()) {
+            GraphListDrawTrace(&graphs, &camera, &vars, UiTraceX(), &display, width, height);
+        }
+        UiFrame(&graphs, &vars, &camera, &display, world);
+        DisplayEndFrame(&display);
     }
 
+    DisplayShutdown(&display);
     GraphListFree(&graphs);
     CloseWindow();
     return 0;

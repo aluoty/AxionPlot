@@ -2,7 +2,7 @@
 
 A full graphing calculator built with **C** and **Raylib**, compiled to **WebAssembly** for the browser.
 
-Plot functions interactively with pan/zoom, multiple graph modes, an on-screen keypad, scientific calculator, value tables, and trace mode.
+Plot functions interactively with pan/zoom, multiple graph modes, an on-screen keypad, scientific calculator, value tables, trace mode, and adjustable display quality.
 
 ## Features
 
@@ -15,17 +15,17 @@ Plot functions interactively with pan/zoom, multiple graph modes, an on-screen k
 - Trace mode: vertical cursor shows `(x, y)` on each visible graph
 - Pan (drag) and zoom (scroll wheel) on the plot area
 
+### Display quality
+- Adjustable window sizes: 1280×720, 1600×900, 1920×1080, 2560×1440
+- Supersampling quality: 1× (standard), 2× (high), 3× (ultra)
+- MSAA and HiDPI support on desktop
+- **Display** tab in-app, or toolbar on web
+
 ### Calculator
 - Scientific expression evaluation (`sin`, `cos`, `tan`, `sqrt`, `ln`, `log`, `abs`, etc.)
 - Variables `a`, `b`, `c` assignable via `a=2` or `a=sin(pi/4)`
 - On-screen keypad for numbers, operators, and functions
 - Value table for any plotted function
-
-### Math support
-- Operators: `+`, `-`, `*`, `/`, `^`
-- Functions: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh`, `sqrt`, `abs`, `ln`, `log`, `log10`, `exp`, `floor`, `ceil`, `fac`
-- Constants: `pi`, `e`
-- Implicit multiplication: `2x`, `3sin(x)`
 
 ### Platforms
 - Native desktop (Linux, macOS, Windows)
@@ -33,50 +33,84 @@ Plot functions interactively with pan/zoom, multiple graph modes, an on-screen k
 
 ## Requirements
 
-### Desktop build
-
-- CMake 3.15+
-- C compiler (GCC or Clang)
-- OpenGL development libraries
-
-### Web (WASM) build
-
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
-- CMake 3.15+
+- **CMake** 3.15+
+- **make** and a C compiler (GCC or Clang)
+- OpenGL development libraries (desktop only)
+- **git** (for fetching Raylib and Emscripten)
 
 ## Build
 
-### Native (Linux / macOS / Windows)
+All builds go through the **Makefile** (which wraps CMake):
 
 ```bash
-./scripts/build-native.sh
+make              # native desktop build (default 1920×1080 @ 2× quality)
+make native       # same as above
+make wasm         # WebAssembly build
+make run          # build and run native app
+make run-web      # build WASM and serve at http://localhost:8000
+make clean        # remove build/ and build-web/
+```
+
+Override default resolution at build time:
+
+```bash
+make native WIDTH=1280 HEIGHT=720 SCALE=1
+make wasm WIDTH=1920 HEIGHT=1080 SCALE=2
+```
+
+## Emscripten setup
+
+One-time install (clones SDK to `tools/emsdk/`):
+
+```bash
+make setup-emsdk
+make wasm
+```
+
+The Makefile activates Emscripten automatically for `make wasm`. To use `emcc` directly in your shell:
+
+```bash
+source tools/emsdk/emsdk_env.sh
+```
+
+### Manual Emscripten install
+
+If you prefer a system-wide install:
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+cd ~/emsdk
+./emsdk install latest
+./emsdk activate latest
+source ~/emsdk/emsdk_env.sh
+make wasm
+```
+
+Fedora users may also need:
+
+```bash
+sudo dnf install cmake gcc git python3
+```
+
+## Run
+
+**Desktop:**
+
+```bash
+make run
+# or
 ./build/AxionPlot
 ```
 
-### WebAssembly
+**Web:**
 
 ```bash
-source /path/to/emsdk/emsdk_env.sh
-./scripts/build-wasm.sh
-```
-
-Output files are written to `build-web/`:
-
-- `AxionPlot.html`
-- `AxionPlot.js`
-- `AxionPlot.wasm`
-- `index.html` (copy of AxionPlot.html)
-
-### Run in the browser
-
-```bash
-# Option 1: emrun (recommended)
-emrun build-web/AxionPlot.html
-
-# Option 2: any static file server
-python -m http.server --directory build-web
+source tools/emsdk/emsdk_env.sh   # if not already active
+make run-web
 # Open http://localhost:8000/
 ```
+
+Use the toolbar at the top of the web page to change canvas size and quality before or after load.
 
 ## Usage
 
@@ -86,22 +120,19 @@ python -m http.server --directory build-web
 | `cos(t), sin(t)` | Plot circle (Parametric mode) |
 | `1+cos(t)` | Plot cardioid (Polar mode) |
 | `a=3` | Set variable `a` to 3 |
-| **Graph** tab → **Plot** | Add current expression as a graph |
-| **Calc** tab → **=** | Evaluate expression numerically |
-| **Table** tab | View sampled values for a graph |
-| **Trace** | Show y-values at cursor x on all graphs |
-| **Home** | Reset pan/zoom to default view |
+| **Display** tab | Change window size and render quality |
+| **F11** | Toggle fullscreen (desktop) |
 | Mouse drag (plot area) | Pan |
 | Scroll wheel (plot area) | Zoom toward cursor |
-| Enter | Plot or evaluate (depending on tab) |
 
 ## Project layout
 
 ```
-src/          Application source (main, camera, graph, expr, ui)
+src/          Application source (main, camera, display, graph, expr, ui)
 lib/          tinyexpr (math parser) and raygui (UI)
 web/          Emscripten HTML shell
-scripts/      Build helpers (build-native.sh, build-wasm.sh)
+CMakeLists.txt
+Makefile      Primary build entry point
 ```
 
 ## License

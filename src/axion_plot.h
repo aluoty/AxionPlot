@@ -54,7 +54,8 @@ typedef enum {
 typedef enum {
     UI_TAB_GRAPH = 0,
     UI_TAB_CALC,
-    UI_TAB_TABLE
+    UI_TAB_TABLE,
+    UI_TAB_DISPLAY
 } UiTab;
 
 #endif

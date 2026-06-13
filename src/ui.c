@@ -364,7 +364,55 @@ float UiTraceX(void) {
     return g_trace_x;
 }
 
-void UiFrame(GraphList *graphs, PlotVars *vars, PlotCamera *camera, Vector2 cursor_world) {
+static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
+    const char *window_names = "1280x720;1600x900;1920x1080;2560x1440";
+    const char *quality_names = "Standard (1x);High (2x);Ultra (3x)";
+
+    int prev_window = display->window_preset;
+    int prev_quality = display->quality_preset;
+
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Window size");
+    *y += 22;
+    if (GuiComboBox((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 24}, window_names, &display->window_preset)) {
+        if (display->window_preset != prev_window) {
+            DisplayApplyWindowPreset(display, display->window_preset);
+            snprintf(g_status, sizeof(g_status), "Window set to %s", DisplayResolutionLabel(display));
+        }
+    }
+    *y += 30;
+
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, "Render quality (supersampling)");
+    *y += 22;
+    if (GuiComboBox((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 24}, quality_names, &display->quality_preset)) {
+        if (display->quality_preset != prev_quality) {
+            DisplayApplyQualityPreset(display, display->quality_preset);
+            snprintf(g_status, sizeof(g_status), "Quality set to %dx supersampling", display->render_scale);
+        }
+    }
+    *y += 30;
+
+    char info[96];
+    snprintf(info, sizeof(info), "Output: %s", DisplayResolutionLabel(display));
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
+    *y += 24;
+
+    int render_w = display->window_width * display->render_scale;
+    int render_h = display->window_height * display->render_scale;
+    snprintf(info, sizeof(info), "Internal buffer: %dx%d", render_w, render_h);
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
+    *y += 28;
+
+    if (GuiButton((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 28}, display->fullscreen ? "Exit fullscreen (F11)" : "Fullscreen (F11)")) {
+        DisplayToggleFullscreen(display);
+    }
+    *y += 34;
+
+    GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 36},
+             "Higher quality renders graphs at 2x/3x\nresolution then scales down for\nsharper curves and text.");
+    *y += 48;
+}
+
+void UiFrame(GraphList *graphs, PlotVars *vars, PlotCamera *camera, DisplaySettings *display, Vector2 cursor_world) {
     int height = GetScreenHeight();
     const int inner_w = PANEL_WIDTH - PANEL_PADDING * 2;
 
@@ -377,14 +425,16 @@ void UiFrame(GraphList *graphs, PlotVars *vars, PlotCamera *camera, Vector2 curs
 
     int y = PANEL_PADDING;
 
-    if (GuiButton((Rectangle){PANEL_PADDING, (float)y, (float)(inner_w / 3 - 2), 26}, "Graph")) g_tab = UI_TAB_GRAPH;
-    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 3 + 2, (float)y, (float)(inner_w / 3 - 2), 26}, "Calc")) g_tab = UI_TAB_CALC;
-    if (GuiButton((Rectangle){PANEL_PADDING + 2 * inner_w / 3 + 4, (float)y, (float)(inner_w / 3 - 2), 26}, "Table")) g_tab = UI_TAB_TABLE;
+    if (GuiButton((Rectangle){PANEL_PADDING, (float)y, (float)(inner_w / 4 - 2), 26}, "Graph")) g_tab = UI_TAB_GRAPH;
+    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 4 + 2, (float)y, (float)(inner_w / 4 - 2), 26}, "Calc")) g_tab = UI_TAB_CALC;
+    if (GuiButton((Rectangle){PANEL_PADDING + inner_w / 2 + 4, (float)y, (float)(inner_w / 4 - 2), 26}, "Table")) g_tab = UI_TAB_TABLE;
+    if (GuiButton((Rectangle){PANEL_PADDING + 3 * inner_w / 4 + 6, (float)y, (float)(inner_w / 4 - 2), 26}, "Display")) g_tab = UI_TAB_DISPLAY;
     y += 34;
 
     if (g_tab == UI_TAB_GRAPH) DrawGraphTab(graphs, vars, camera, inner_w, &y);
     else if (g_tab == UI_TAB_CALC) DrawCalcTab(vars, inner_w, &y);
-    else DrawTableTab(graphs, vars, inner_w, &y);
+    else if (g_tab == UI_TAB_TABLE) DrawTableTab(graphs, vars, inner_w, &y);
+    else DrawDisplayTab(display, inner_w, &y);
 
     y += 8;
     DrawKeypad(PANEL_PADDING, y, inner_w);

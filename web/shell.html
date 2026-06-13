@@ -18,9 +18,49 @@
             overflow: hidden;
         }
 
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 12px;
+            background: rgba(0, 0, 0, 0.85);
+            border-bottom: 1px solid rgba(0, 255, 204, 0.25);
+            z-index: 10;
+            font-size: 13px;
+        }
+
+        #toolbar label {
+            opacity: 0.85;
+        }
+
+        #toolbar select {
+            background: #111;
+            color: #00ffcc;
+            border: 1px solid rgba(0, 255, 204, 0.35);
+            padding: 4px 8px;
+            font-family: inherit;
+        }
+
+        #stage {
+            position: absolute;
+            top: 36px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         canvas.emscripten {
             display: block;
-            margin: 0 auto;
+            max-width: 100%;
+            max-height: 100%;
             outline: none;
             border: none;
         }
@@ -31,29 +71,75 @@
             bottom: 10px;
             opacity: 0.7;
             font-size: 12px;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
+    <div id="toolbar">
+        <label for="resolution">Canvas</label>
+        <select id="resolution">
+            <option value="1280x720">1280 × 720</option>
+            <option value="1600x900">1600 × 900</option>
+            <option value="1920x1080" selected>1920 × 1080</option>
+            <option value="2560x1440">2560 × 1440</option>
+        </select>
+        <label for="dpr">Quality</label>
+        <select id="dpr">
+            <option value="1">Standard (1×)</option>
+            <option value="2" selected>High (2×)</option>
+            <option value="3">Ultra (3×)</option>
+        </select>
+    </div>
+    <div id="stage">
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
+    </div>
     <div id="status">Loading AxionPlot graphing calculator...</div>
     <script type="text/javascript">
         var statusElement = document.getElementById('status');
+        var canvas = document.getElementById('canvas');
+        var resolutionSelect = document.getElementById('resolution');
+        var dprSelect = document.getElementById('dpr');
+
+        function parseResolution(value) {
+            var parts = value.split('x');
+            return { width: parseInt(parts[0], 10), height: parseInt(parts[1], 10) };
+        }
+
+        function applyCanvasSize() {
+            var res = parseResolution(resolutionSelect.value);
+            var quality = parseInt(dprSelect.value, 10);
+            var pixelRatio = Math.min(quality, window.devicePixelRatio || 1);
+            var renderScale = quality;
+
+            canvas.width = res.width * renderScale;
+            canvas.height = res.height * renderScale;
+            canvas.style.width = res.width + 'px';
+            canvas.style.height = res.height + 'px';
+
+            if (Module && Module.setCanvasSize) {
+                Module.setCanvasSize(canvas.width, canvas.height);
+            }
+        }
+
+        canvas.addEventListener('webglcontextlost', function(e) {
+            alert('WebGL context lost. Please reload the page.');
+            e.preventDefault();
+        }, false);
+
+        resolutionSelect.addEventListener('change', applyCanvasSize);
+        dprSelect.addEventListener('change', applyCanvasSize);
+
         var Module = {
-            canvas: (function() {
-                var canvas = document.getElementById('canvas');
-                canvas.addEventListener('webglcontextlost', function(e) {
-                    alert('WebGL context lost. Please reload the page.');
-                    e.preventDefault();
-                }, false);
-                return canvas;
-            })(),
+            canvas: canvas,
             setStatus: function(text) {
                 if (!statusElement) return;
                 if (text) statusElement.textContent = text;
                 else statusElement.style.display = 'none';
-            }
+            },
+            preRun: [applyCanvasSize]
         };
+
         window.onerror = function() {
             Module.setStatus('Exception thrown. See JavaScript console.');
         };
