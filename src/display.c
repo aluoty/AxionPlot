@@ -53,13 +53,6 @@ static int FindWindowPreset(int w, int h) {
     return 2;
 }
 
-static int FindQualityPreset(int scale) {
-    for (int i = 0; i < 3; i++) {
-        if (g_quality_scales[i] == scale) return i;
-    }
-    return 1;
-}
-
 void DisplayApplyWindowPreset(DisplaySettings *display, int preset) {
     if (preset < 0 || preset >= 4) return;
 

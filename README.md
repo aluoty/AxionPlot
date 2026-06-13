@@ -105,7 +105,6 @@ make run
 **Web:**
 
 ```bash
-source tools/emsdk/emsdk_env.sh   # if not already active
 make run-web
 # Open http://localhost:8000/
 ```
@@ -128,11 +127,11 @@ Use the toolbar at the top of the web page to change canvas size and quality bef
 ## Project layout
 
 ```
-src/          Application source (main, camera, display, graph, expr, ui)
-lib/          tinyexpr (math parser) and raygui (UI)
-web/          Emscripten HTML shell
-CMakeLists.txt
-Makefile      Primary build entry point
+src/           Application source
+lib/           tinyexpr and raygui
+web/           Emscripten HTML shell
+CMakeLists.txt Build definition (used by Makefile)
+Makefile       Build entry point
 ```
 
 ## License

@@ -179,11 +179,6 @@ static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, 
     *y += 30;
 
     Rectangle box_a = {PANEL_PADDING, (float)*y, (float)inner_w - 70, 28};
-    const char *label_a = g_plot_mode == PLOT_PARAMETRIC ? "x(t)" :
-                          g_plot_mode == PLOT_POLAR ? "r(t)" : "y(x)";
-    char box_label[32];
-    snprintf(box_label, sizeof(box_label), "%s##a", label_a);
-    (void)box_label;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         g_edit_a = CheckCollisionPointRec(GetMousePosition(), box_a);
         if (g_edit_a) g_edit_b = false;

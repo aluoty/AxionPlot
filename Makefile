@@ -1,10 +1,5 @@
-# AxionPlot build system
-# Usage:
-#   make              # native desktop build
-#   make wasm         # WebAssembly build (requires emsdk)
-#   make setup-emsdk  # one-time Emscripten install
-#   make run          # run native build
-#   make run-web      # serve WASM build locally
+# AxionPlot build — run `make help` for targets.
+# CMakeLists.txt is the build definition; this file is the entry point.
 
 PROJECT   := AxionPlot
 BUILD     := build
