@@ -391,9 +391,7 @@ static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
     *y += 24;
 
-    int render_w = display->window_width * display->render_scale;
-    int render_h = display->window_height * display->render_scale;
-    snprintf(info, sizeof(info), "Internal buffer: %dx%d", render_w, render_h);
+    snprintf(info, sizeof(info), "Quality affects curve density and line width");
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 20}, info);
     *y += 28;
 
@@ -403,7 +401,7 @@ static void DrawDisplayTab(DisplaySettings *display, int inner_w, int *y) {
     *y += 34;
 
     GuiLabel((Rectangle){PANEL_PADDING, (float)*y, (float)inner_w, 36},
-             "Higher quality renders graphs at 2x/3x\nresolution then scales down for\nsharper curves and text.");
+             "Higher quality increases curve\nsampling and line thickness.");
     *y += 48;
 }
 

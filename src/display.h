@@ -10,7 +10,6 @@ typedef struct {
     int window_preset;
     int quality_preset;
     bool fullscreen;
-    RenderTexture2D target;
 } DisplaySettings;
 
 void DisplayInit(DisplaySettings *display, int width, int height, int render_scale);
@@ -20,6 +19,7 @@ void DisplayApplyQualityPreset(DisplaySettings *display, int preset);
 void DisplayToggleFullscreen(DisplaySettings *display);
 void DisplayEnsureTarget(DisplaySettings *display);
 
+void DisplaySyncInput(void);
 void DisplayBeginFrame(DisplaySettings *display);
 void DisplayEndFrame(DisplaySettings *display);
 

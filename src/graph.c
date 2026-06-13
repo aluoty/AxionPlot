@@ -223,7 +223,6 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
 
     float x_start = floorf(x_min / x_step) * x_step;
     float y_start = floorf(y_min / y_step) * y_step;
-    int scale = DisplayRenderScale(display);
     int label_fs = DisplayFontSize(display, 12);
     float grid_w = DisplayLineWidth(display, 1.0f);
     float axis_w = DisplayLineWidth(display, 1.5f);
@@ -238,7 +237,7 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
         if (top.x >= PANEL_WIDTH && top.x <= screen_w) {
             char label[32];
             FormatTick(x, label, sizeof(label));
-            DrawText(label, (int)top.x * scale + 2, (screen_h - 18) * scale, label_fs, (Color){140, 140, 140, 255});
+            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){140, 140, 140, 255});
         }
     }
 
@@ -252,7 +251,7 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
         if (left.y >= 0 && left.y <= screen_h - 20) {
             char label[32];
             FormatTick(y, label, sizeof(label));
-            DrawText(label, (PANEL_WIDTH + 4) * scale, (int)left.y * scale - label_fs, label_fs, (Color){140, 140, 140, 255});
+            DrawText(label, PANEL_WIDTH + 4, (int)left.y - label_fs, label_fs, (Color){140, 140, 140, 255});
         }
     }
 
@@ -285,7 +284,6 @@ void GraphListDraw(const GraphList *list, const PlotCamera *cam, PlotVars *vars,
 }
 
 void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *vars, float trace_x, const DisplaySettings *display, int screen_w, int screen_h) {
-    int scale = DisplayRenderScale(display);
     Vector2 top = PlotWorldToScreen(cam, trace_x, 0.0f, screen_w, screen_h);
     DrawLineEx((Vector2){top.x, 0}, (Vector2){top.x, (float)screen_h}, DisplayLineWidth(display, 1.0f), (Color){60, 60, 60, 255});
 
@@ -302,6 +300,6 @@ void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *
 
         char info[64];
         snprintf(info, sizeof(info), "(%.3g, %.3g)", trace_x, y);
-        DrawText(info, (int)pt.x * scale + 8, (int)pt.y * scale - 8, DisplayFontSize(display, 12), graph->color);
+        DrawText(info, (int)pt.x + 8, (int)pt.y - 8, DisplayFontSize(display, 12), graph->color);
     }
 }

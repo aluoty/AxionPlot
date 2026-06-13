@@ -2,6 +2,10 @@
 
 #include <stdio.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten/html5.h>
+#endif
+
 static const int g_window_presets[][2] = {
     {1280, 720},
     {1600, 900},
@@ -18,32 +22,14 @@ void DisplayInit(DisplaySettings *display, int width, int height, int render_sca
     display->render_scale = render_scale < 1 ? 1 : render_scale;
     display->window_preset = 2;
     display->quality_preset = 1;
-    display->target = (RenderTexture2D){0};
 }
 
 void DisplayShutdown(DisplaySettings *display) {
-    if (display->target.id != 0) {
-        UnloadRenderTexture(display->target);
-        display->target = (RenderTexture2D){0};
-    }
+    (void)display;
 }
 
 void DisplayEnsureTarget(DisplaySettings *display) {
-    int rw = display->window_width * display->render_scale;
-    int rh = display->window_height * display->render_scale;
-
-    if (display->target.id != 0 &&
-        display->target.texture.width == rw &&
-        display->target.texture.height == rh) {
-        return;
-    }
-
-    if (display->target.id != 0) {
-        UnloadRenderTexture(display->target);
-    }
-
-    display->target = LoadRenderTexture(rw, rh);
-    SetTextureFilter(display->target.texture, TEXTURE_FILTER_BILINEAR);
+    (void)display;
 }
 
 static int FindWindowPreset(int w, int h) {
@@ -66,7 +52,6 @@ void DisplayApplyWindowPreset(DisplaySettings *display, int preset) {
     }
 
     SetWindowSize(display->window_width, display->window_height);
-    DisplayEnsureTarget(display);
 }
 
 void DisplayApplyQualityPreset(DisplaySettings *display, int preset) {
@@ -74,7 +59,6 @@ void DisplayApplyQualityPreset(DisplaySettings *display, int preset) {
 
     display->quality_preset = preset;
     display->render_scale = g_quality_scales[preset];
-    DisplayEnsureTarget(display);
 }
 
 void DisplayToggleFullscreen(DisplaySettings *display) {
@@ -84,8 +68,19 @@ void DisplayToggleFullscreen(DisplaySettings *display) {
     if (!display->fullscreen) {
         SetWindowSize(display->window_width, display->window_height);
     }
+}
 
-    DisplayEnsureTarget(display);
+void DisplaySyncInput(void) {
+#if defined(__EMSCRIPTEN__)
+    double css_w = 0.0;
+    double css_h = 0.0;
+    if (emscripten_get_element_css_size("#canvas", &css_w, &css_h) == EMSCRIPTEN_RESULT_SUCCESS &&
+        css_w > 0.0 && css_h > 0.0) {
+        SetMouseScale((float)GetScreenWidth() / (float)css_w, (float)GetScreenHeight() / (float)css_h);
+        return;
+    }
+#endif
+    SetMouseScale(1.0f, 1.0f);
 }
 
 void DisplayBeginFrame(DisplaySettings *display) {
@@ -100,35 +95,12 @@ void DisplayBeginFrame(DisplaySettings *display) {
         }
     }
 
-    DisplayEnsureTarget(display);
-
-    BeginTextureMode(display->target);
+    BeginDrawing();
     ClearBackground((Color){8, 8, 12, 255});
-
-    Camera2D cam = {0};
-    cam.zoom = (float)display->render_scale;
-    cam.offset = (Vector2){0.0f, 0.0f};
-    cam.target = (Vector2){0.0f, 0.0f};
-    BeginMode2D(cam);
 }
 
 void DisplayEndFrame(DisplaySettings *display) {
-    EndMode2D();
-    EndTextureMode();
-
-    BeginDrawing();
-    ClearBackground(BLACK);
-
-    int width = GetScreenWidth();
-    int height = GetScreenHeight();
-    DrawTexturePro(
-        display->target.texture,
-        (Rectangle){0.0f, 0.0f, (float)display->target.texture.width, -(float)display->target.texture.height},
-        (Rectangle){0.0f, 0.0f, (float)width, (float)height},
-        (Vector2){0.0f, 0.0f},
-        0.0f,
-        WHITE
-    );
+    (void)display;
     EndDrawing();
 }
 
@@ -145,11 +117,11 @@ int DisplaySampleCount(const DisplaySettings *display, int plot_width) {
 }
 
 int DisplayFontSize(const DisplaySettings *display, int base) {
-    return base * display->render_scale;
+    return base + (display->render_scale - 1) * 2;
 }
 
 float DisplayLineWidth(const DisplaySettings *display, float base) {
-    return base * (float)display->render_scale;
+    return base * (0.75f + 0.25f * (float)display->render_scale);
 }
 
 const char *DisplayResolutionLabel(const DisplaySettings *display) {

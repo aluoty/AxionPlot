@@ -15,13 +15,16 @@
 #endif
 
 int main(void) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
+    unsigned int config = FLAG_WINDOW_RESIZABLE;
+#if !defined(PLATFORM_WEB)
+    config |= FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI;
+#endif
+    SetConfigFlags(config);
     InitWindow(AXION_WINDOW_WIDTH, AXION_WINDOW_HEIGHT, "AxionPlot - Graphing Calculator");
     SetTargetFPS(60);
 
     DisplaySettings display;
-    DisplayInit(&display, AXION_WINDOW_WIDTH, AXION_WINDOW_HEIGHT, AXION_RENDER_SCALE);
-    DisplayEnsureTarget(&display);
+    DisplayInit(&display, GetScreenWidth(), GetScreenHeight(), AXION_RENDER_SCALE);
 
     PlotCamera camera = {0.0f, 0.0f, 60.0f};
     PlotVars vars = {1.0, 1.0, 1.0};
@@ -30,6 +33,8 @@ int main(void) {
     UiInit();
 
     while (!WindowShouldClose()) {
+        DisplaySyncInput();
+
         int width = GetScreenWidth();
         int height = GetScreenHeight();
         Vector2 mouse = GetMousePosition();

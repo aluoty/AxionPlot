@@ -55,14 +55,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: auto;
         }
 
+        /* Backing-store pixels must match CSS size — no scaling via max-width */
         canvas.emscripten {
             display: block;
-            max-width: 100%;
-            max-height: 100%;
             outline: none;
-            border: none;
+            border: 0 none;
+            padding: 0;
         }
 
         #status {
@@ -84,12 +85,7 @@
             <option value="1920x1080" selected>1920 × 1080</option>
             <option value="2560x1440">2560 × 1440</option>
         </select>
-        <label for="dpr">Quality</label>
-        <select id="dpr">
-            <option value="1">Standard (1×)</option>
-            <option value="2" selected>High (2×)</option>
-            <option value="3">Ultra (3×)</option>
-        </select>
+        <span id="hint">Quality: use Display tab in app</span>
     </div>
     <div id="stage">
         <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" tabindex="-1"></canvas>
@@ -98,27 +94,30 @@
     <script type="text/javascript">
         var statusElement = document.getElementById('status');
         var canvas = document.getElementById('canvas');
+        var stage = document.getElementById('stage');
         var resolutionSelect = document.getElementById('resolution');
-        var dprSelect = document.getElementById('dpr');
+        var runtimeReady = false;
 
         function parseResolution(value) {
             var parts = value.split('x');
             return { width: parseInt(parts[0], 10), height: parseInt(parts[1], 10) };
         }
 
-        function applyCanvasSize() {
+        function fitCanvas() {
             var res = parseResolution(resolutionSelect.value);
-            var quality = parseInt(dprSelect.value, 10);
-            var pixelRatio = Math.min(quality, window.devicePixelRatio || 1);
-            var renderScale = quality;
+            var maxW = stage.clientWidth;
+            var maxH = stage.clientHeight;
+            var scale = Math.min(maxW / res.width, maxH / res.height, 1.0);
+            var w = Math.max(1, Math.floor(res.width * scale));
+            var h = Math.max(1, Math.floor(res.height * scale));
 
-            canvas.width = res.width * renderScale;
-            canvas.height = res.height * renderScale;
-            canvas.style.width = res.width + 'px';
-            canvas.style.height = res.height + 'px';
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
 
-            if (Module && Module.setCanvasSize) {
-                Module.setCanvasSize(canvas.width, canvas.height);
+            if (runtimeReady) {
+                Module.setCanvasSize(w, h);
             }
         }
 
@@ -127,8 +126,8 @@
             e.preventDefault();
         }, false);
 
-        resolutionSelect.addEventListener('change', applyCanvasSize);
-        dprSelect.addEventListener('change', applyCanvasSize);
+        resolutionSelect.addEventListener('change', fitCanvas);
+        window.addEventListener('resize', fitCanvas);
 
         var Module = {
             canvas: canvas,
@@ -137,7 +136,10 @@
                 if (text) statusElement.textContent = text;
                 else statusElement.style.display = 'none';
             },
-            preRun: [applyCanvasSize]
+            preRun: [fitCanvas],
+            onRuntimeInitialized: function() {
+                runtimeReady = true;
+            }
         };
 
         window.onerror = function() {

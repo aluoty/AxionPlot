@@ -10,7 +10,7 @@ endif()
 
 if(EMSCRIPTEN)
     set(PLATFORM "Web" CACHE STRING "" FORCE)
-    set(GRAPHICS "OPENGL_ES_2" CACHE STRING "" FORCE)
+    set(GRAPHICS "GRAPHICS_API_OPENGL_ES2" CACHE STRING "" FORCE)
 endif()
 
 set(AXION_WINDOW_WIDTH 1920 CACHE STRING "Default window width")
@@ -62,7 +62,7 @@ if(EMSCRIPTEN)
         -sWASM=1
         -sASYNCIFY
         -sGL_ENABLE_GET_PROC_ADDRESS=1
-        -sMIN_WEBGL_VERSION=2
+        -sEXPORTED_RUNTIME_METHODS=setCanvasSize
         --shell-file "${CMAKE_SOURCE_DIR}/web/shell.html"
     )
 endif()
