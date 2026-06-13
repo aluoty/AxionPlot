@@ -111,6 +111,23 @@ make run-web
 
 Use the **Display** tab to change render quality. On desktop you can also change window size; on web the canvas follows the browser window.
 
+## Deploy to Cloudflare Pages
+
+Cloudflare's build image does not include **cmake** by default. Use the provided build script:
+
+| Setting | Value |
+|---------|-------|
+| **Build command** | `bash scripts/cloudflare-build.sh` |
+| **Build output directory** | `build-web` |
+
+The script installs cmake (via apt or a portable download), sets up Emscripten, and builds the WASM bundle. It also copies `_headers` so `.wasm` files are served with the correct MIME type.
+
+Alternative (if cmake is already available):
+
+```bash
+make setup-emsdk && make wasm SCALE=1
+```
+
 ## Usage
 
 | Input / Action | Result |

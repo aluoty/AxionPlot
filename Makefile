@@ -23,7 +23,12 @@ CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Release \
                -DAXION_WINDOW_HEIGHT=$(HEIGHT) \
                -DAXION_RENDER_SCALE=$(SCALE)
 
-.PHONY: all native wasm clean run run-web setup-emsdk emsdk-check help
+WEB_CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Release \
+                   -DAXION_WINDOW_WIDTH=$(WIDTH) \
+                   -DAXION_WINDOW_HEIGHT=$(HEIGHT) \
+                   -DAXION_RENDER_SCALE=1
+
+.PHONY: all native wasm clean run run-web setup-emsdk emsdk-check cloudflare help
 
 all: native
 
@@ -31,6 +36,7 @@ help:
 	@echo "Targets:"
 	@echo "  make native              Build desktop app ($(WIDTH)x$(HEIGHT) @ $(SCALE)x)"
 	@echo "  make wasm                Build WebAssembly (uses tools/emsdk if present)"
+	@echo "  make cloudflare          Build for Cloudflare Pages (installs cmake if needed)"
 	@echo "  make setup-emsdk         Install Emscripten SDK to $(EMSROOT)"
 	@echo "  make run                 Run native build"
 	@echo "  make run-web             Serve WASM build on http://localhost:8000"
@@ -48,11 +54,15 @@ native:
 	@echo "Built: $(BUILD)/$(PROJECT)"
 
 wasm: emsdk-check
-	$(call EMS_RUN,emcmake $(CMAKE) -B $(WEB) -DAXION_RENDER_SCALE=1 $(CMAKE_FLAGS))
+	$(call EMS_RUN,emcmake $(CMAKE) -B $(WEB) $(WEB_CMAKE_FLAGS))
 	$(call EMS_RUN,$(CMAKE) --build $(WEB) --parallel $(JOBS))
 	@cp favicon.svg $(WEB)/ 2>/dev/null || true
+	@cp web/_headers $(WEB)/ 2>/dev/null || true
 	@cp $(WEB)/$(PROJECT).html $(WEB)/index.html
 	@echo "Built: $(WEB)/index.html"
+
+cloudflare:
+	bash scripts/cloudflare-build.sh
 
 setup-emsdk:
 	@if [ -d "$(EMSROOT)" ]; then \
