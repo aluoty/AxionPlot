@@ -2,6 +2,7 @@
 
 #include "camera.h"
 #include "expr.h"
+#include "font.h"
 #include "graph.h"
 
 #include <math.h>
@@ -338,7 +339,10 @@ static void DrawTableTab(const GraphList *graphs, PlotVars *vars, int inner_w, i
 void UiInit(void) {
     GuiLoadStyleDefault();
     GuiEnable();
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 15);
+    Font font = UiLoadFont(GetScreenHeight());
+    GuiSetFont(font);
+    int fs = UiFontSize(GetScreenHeight());
+    GuiSetStyle(DEFAULT, TEXT_SIZE, fs);
     GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){190, 235, 220, 255}));
     GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt((Color){210, 245, 235, 255}));
     GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt((Color){8, 12, 24, 200}));

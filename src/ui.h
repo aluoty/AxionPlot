@@ -3,6 +3,7 @@
 
 #include "axion_plot.h"
 #include "display.h"
+#include "font.h"
 
 void UiInit(void);
 bool UiWantsInput(void);

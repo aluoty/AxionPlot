@@ -41,6 +41,7 @@ add_executable(AxionPlot
     src/camera.c
     src/display.c
     src/expr.c
+    src/font.c
     src/graph.c
     src/ui.c
     src/web_api.c

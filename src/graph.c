@@ -2,6 +2,7 @@
 
 #include "camera.h"
 #include "expr.h"
+#include "font.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -237,7 +238,10 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
 
     float x_start = floorf(x_min / x_step) * x_step;
     float y_start = floorf(y_min / y_step) * y_step;
-    int label_fs = DisplayFontSize(display, 13);
+    int label_fs = UiFontSize(screen_h);
+    int label_fs_small = label_fs - 2;
+    if (label_fs_small < 11) label_fs_small = 11;
+    Font plot_font = UiGetFont();
     float grid_w = DisplayLineWidth(display, 1.0f);
     float axis_w = DisplayLineWidth(display, 1.5f);
 
@@ -250,7 +254,8 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
             DrawLineEx((Vector2){top.x, 0}, (Vector2){bot.x, (float)screen_h}, axis ? axis_w : grid_w, c);
             char label[32];
             FormatTick(x, label, sizeof(label));
-            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){180, 195, 220, 255});
+            Vector2 pos = {(float)((int)top.x + 2), (float)(screen_h - label_fs_small - 4)};
+            DrawTextEx(plot_font, label, pos, (float)label_fs_small, 0, (Color){180, 195, 220, 255});
         }
     }
 
@@ -264,7 +269,8 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
         if (left.y >= 0 && left.y <= screen_h - 20) {
             char label[32];
             FormatTick(y, label, sizeof(label));
-            DrawText(label, panel_w + 4, (int)left.y - label_fs, label_fs, (Color){180, 195, 220, 255});
+            Vector2 pos = {(float)(panel_w + 4), (float)((int)left.y - label_fs_small)};
+            DrawTextEx(plot_font, label, pos, (float)label_fs_small, 0, (Color){180, 195, 220, 255});
         }
     }
 
@@ -320,6 +326,7 @@ void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *
 
         char info[64];
         snprintf(info, sizeof(info), "(%.3g, %.3g)", trace_x, y);
-        DrawText(info, (int)pt.x + 10, (int)pt.y - 10, DisplayFontSize(display, 13), graph->color);
+        Vector2 info_pos = {(float)((int)pt.x + 10), (float)((int)pt.y - 10)};
+        DrawTextEx(UiGetFont(), info, info_pos, (float)UiFontSize(screen_h) - 2, 0, graph->color);
     }
 }

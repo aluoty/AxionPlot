@@ -168,10 +168,6 @@ int DisplaySampleCount(const DisplaySettings *display, int plot_width) {
     return samples;
 }
 
-int DisplayFontSize(const DisplaySettings *display, int base) {
-    return base + (display->render_scale - 1) * 2;
-}
-
 float DisplayLineWidth(const DisplaySettings *display, float base) {
     return base * (0.75f + 0.25f * (float)display->render_scale);
 }

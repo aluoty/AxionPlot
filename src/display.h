@@ -28,7 +28,6 @@ void DisplayEndFrame(DisplaySettings *display);
 
 int DisplayRenderScale(const DisplaySettings *display);
 int DisplaySampleCount(const DisplaySettings *display, int plot_width);
-int DisplayFontSize(const DisplaySettings *display, int base);
 float DisplayLineWidth(const DisplaySettings *display, float base);
 
 const char *DisplayResolutionLabel(const DisplaySettings *display);

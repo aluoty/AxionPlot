@@ -26,12 +26,17 @@
             libglvnd
             mesa
 
+            fontconfig
+            dejavu_fonts
+            liberation_ttf
+
             python3
           ];
 
           shellHook = ''
-            echo "AxionPlot dev shell (raylib built via FetchContent)"
-            echo "Run: cmake -B build && cmake --build build"
+            export AXION_FONT="$(fc-match --format='%{file}' DejaVuSans 2>/dev/null || true)"
+            echo "AxionPlot dev shell - font: $AXION_FONT"
+            echo "Run: make native"
           '';
         };
       }
