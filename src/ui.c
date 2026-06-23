@@ -237,10 +237,10 @@ static void DrawGraphTab(GraphList *graphs, PlotVars *vars, PlotCamera *camera, 
             GraphListRemove(graphs, graph->id);
         }
 
-        Color text_color = graph->visible ? (Color){140, 210, 195, 255} : (Color){70, 80, 95, 255};
+        Color text_color = graph->visible ? (Color){190, 235, 220, 255} : (Color){100, 110, 125, 255};
         GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt(text_color));
         GuiLabel((Rectangle){PANEL_PADDING + 36, (float)*y, (float)inner_w - 72, 28}, graph->label);
-        GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){140, 210, 195, 255}));
+        GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){190, 235, 220, 255}));
         *y += 32;
     }
 }
@@ -338,9 +338,9 @@ static void DrawTableTab(const GraphList *graphs, PlotVars *vars, int inner_w, i
 void UiInit(void) {
     GuiLoadStyleDefault();
     GuiEnable();
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 14);
-    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){140, 210, 195, 255}));
-    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt((Color){180, 235, 220, 255}));
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 15);
+    GuiSetStyle(DEFAULT, TEXT_COLOR_NORMAL, ColorToInt((Color){190, 235, 220, 255}));
+    GuiSetStyle(DEFAULT, TEXT_COLOR_FOCUSED, ColorToInt((Color){210, 245, 235, 255}));
     GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, ColorToInt((Color){8, 12, 24, 200}));
     GuiSetStyle(DEFAULT, BASE_COLOR_FOCUSED, ColorToInt((Color){12, 18, 32, 220}));
     GuiSetStyle(DEFAULT, BORDER_COLOR_NORMAL, ColorToInt((Color){60, 120, 110, 60}));

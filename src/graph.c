@@ -237,7 +237,7 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
 
     float x_start = floorf(x_min / x_step) * x_step;
     float y_start = floorf(y_min / y_step) * y_step;
-    int label_fs = DisplayFontSize(display, 12);
+    int label_fs = DisplayFontSize(display, 13);
     float grid_w = DisplayLineWidth(display, 1.0f);
     float axis_w = DisplayLineWidth(display, 1.5f);
 
@@ -245,12 +245,12 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
         Vector2 top = PlotWorldToScreen(cam, x, y_max, screen_w, screen_h, panel_w);
         Vector2 bot = PlotWorldToScreen(cam, x, y_min, screen_w, screen_h, panel_w);
         bool axis = fabsf(x) < x_step * 0.01f;
-        Color c = axis ? (Color){110, 125, 160, 255} : (Color){40, 50, 75, 255};
+        Color c = axis ? (Color){130, 145, 180, 255} : (Color){50, 60, 85, 255};
         if (top.x >= panel_w && top.x <= screen_w) {
             DrawLineEx((Vector2){top.x, 0}, (Vector2){bot.x, (float)screen_h}, axis ? axis_w : grid_w, c);
             char label[32];
             FormatTick(x, label, sizeof(label));
-            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){150, 165, 195, 255});
+            DrawText(label, (int)top.x + 2, screen_h - label_fs - 4, label_fs, (Color){180, 195, 220, 255});
         }
     }
 
@@ -258,13 +258,13 @@ void DrawPlotGrid(const PlotCamera *cam, const DisplaySettings *display, int scr
         Vector2 left = PlotWorldToScreen(cam, x_min, y, screen_w, screen_h, panel_w);
         Vector2 right = PlotWorldToScreen(cam, x_max, y, screen_w, screen_h, panel_w);
         bool axis = fabsf(y) < y_step * 0.01f;
-        Color c = axis ? (Color){110, 125, 160, 255} : (Color){40, 50, 75, 255};
+        Color c = axis ? (Color){130, 145, 180, 255} : (Color){50, 60, 85, 255};
         DrawLineEx((Vector2){(float)panel_w, left.y}, (Vector2){(float)screen_w, right.y}, axis ? axis_w : grid_w, c);
 
         if (left.y >= 0 && left.y <= screen_h - 20) {
             char label[32];
             FormatTick(y, label, sizeof(label));
-            DrawText(label, panel_w + 4, (int)left.y - label_fs, label_fs, (Color){150, 165, 195, 255});
+            DrawText(label, panel_w + 4, (int)left.y - label_fs, label_fs, (Color){180, 195, 220, 255});
         }
     }
 
@@ -320,6 +320,6 @@ void GraphListDrawTrace(const GraphList *list, const PlotCamera *cam, PlotVars *
 
         char info[64];
         snprintf(info, sizeof(info), "(%.3g, %.3g)", trace_x, y);
-        DrawText(info, (int)pt.x + 8, (int)pt.y - 8, DisplayFontSize(display, 12), graph->color);
+        DrawText(info, (int)pt.x + 10, (int)pt.y - 10, DisplayFontSize(display, 13), graph->color);
     }
 }
